@@ -301,7 +301,9 @@ export class SupabaseService {
   // Storage
   static async uploadImage(bucket: string, file: File, path?: string): Promise<string> {
     const fileExt = file.name.split('.').pop()
-    const fileName = path || `${Date.now()}.${fileExt}`
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substring(2, 15)
+    const fileName = path || `${timestamp}_${randomId}.${fileExt}`
 
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -310,7 +312,10 @@ export class SupabaseService {
         upsert: false,
       })
 
-    if (error) throw error
+    if (error) {
+      console.error('Storage upload error:', error)
+      throw new Error(`Erreur upload image: ${error.message}`)
+    }
 
     const { data: urlData } = supabase.storage
       .from(bucket)
