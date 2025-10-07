@@ -2,9 +2,17 @@ import { supabase } from './supabase-client'
 import { User, Listing, Message, Like, Match } from './supabase-client'
 
 export class SupabaseService {
+  // Helper to ensure supabase client is available
+  private static getClient() {
+    if (!supabase) {
+      throw new Error('Supabase client not initialized. Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.')
+    }
+    return supabase
+  }
   // Authentication
   static async signUp(email: string, password: string, userData: Partial<User>) {
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const client = this.getClient()
+    const { data: authData, error: authError } = await client.auth.signUp({
       email,
       password,
     })
@@ -13,7 +21,7 @@ export class SupabaseService {
 
     if (authData.user) {
       // Create user profile
-      const { data: newUserData, error: userError } = await supabase
+      const { data: newUserData, error: userError } = await client
         .from('users')
         .insert({
           id: authData.user.id,
