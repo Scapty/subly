@@ -1,17 +1,9 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://rlukmyaomplzkobifmxy.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsdWtteWFvbXBsemtvYmlmbXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4NTM3NjQsImV4cCI6MjA3NTQyOTc2NH0.JINviTvq-it095nd5KMumPapMmGgu6p1ijq1dM82Lrc",
     "NEXT_PUBLIC_APP_URL": "https://subly.vercel.app"
-  },
-  "functions": {
-    "src/app/**/*.{js,ts,tsx}": {
-      "maxDuration": 30
-    }
   },
   "regions": ["fra1"]
 }
