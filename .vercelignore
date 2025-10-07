@@ -1,0 +1,13 @@
+# Vercel ignore patterns
+README.md
+SETUP-INSTRUCTIONS.md
+database-setup.sql
+.git
+.gitignore
+.env.local
+node_modules
+.next
+.vscode
+.idea
+*.log
+*.md
