@@ -13,7 +13,7 @@ export class SupabaseService {
 
     if (authData.user) {
       // Create user profile
-      const { data: userData, error: userError } = await supabase
+      const { data: newUserData, error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
@@ -27,7 +27,7 @@ export class SupabaseService {
         .single()
 
       if (userError) throw userError
-      return userData
+      return newUserData
     }
 
     throw new Error('No user created')
@@ -205,7 +205,7 @@ export class SupabaseService {
       .eq('listing_id', listingId)
 
     if (error) throw error
-    return data?.map(like => like.user).filter(Boolean) || []
+    return (data?.map(like => like.user).filter(Boolean) || []) as unknown as User[]
   }
 
   // Matches

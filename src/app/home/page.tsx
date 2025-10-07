@@ -176,7 +176,7 @@ export default function Home() {
                 <div
                   className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{
-                    width: `${((currentIndex + 1) / apartments.length) * 100}%`,
+                    width: `${((currentIndex + 1) / listings.length) * 100}%`,
                   }}
                 />
               </div>

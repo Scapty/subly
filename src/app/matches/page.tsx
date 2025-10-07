@@ -140,21 +140,21 @@ export default function Matches() {
                         <div className="flex items-center space-x-2">
                           <div className="w-8 h-8 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
                             {user.role === 'seeker'
-                              ? match.landlord.name.charAt(0)
-                              : match.seeker.name.charAt(0)
+                              ? match.landlord?.name?.charAt(0) || 'L'
+                              : match.seeker?.name?.charAt(0) || 'S'
                             }
                           </div>
                           <div>
                             <p className="text-sm font-medium text-dark-gray">
                               {user.role === 'seeker'
-                                ? match.landlord.name
-                                : match.seeker.name
+                                ? match.landlord?.name || 'Landlord'
+                                : match.seeker?.name || 'Seeker'
                               }
                             </p>
                             <div className="flex space-x-1">
                               {(user.role === 'seeker'
-                                ? match.landlord.interests
-                                : match.seeker.interests
+                                ? match.landlord?.interests || []
+                                : match.seeker?.interests || []
                               ).slice(0, 2).map((interest) => (
                                 <span key={interest} className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
                                   {interest}
@@ -185,7 +185,7 @@ export default function Matches() {
                 {/* Match date */}
                 <div className="mt-3 pt-3 border-t border-gray-100 text-center">
                   <p className="text-xs text-gray-500">
-                    Match créé le {new Date(match.createdAt).toLocaleDateString('fr-FR')}
+                    Match créé le {new Date(match.created_at).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>
