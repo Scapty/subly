@@ -1,8 +1,9 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { User } from '@/types'
-import { auth } from './supabase'
+import { User } from '@/lib/supabase-client'
+import { SupabaseService } from './supabase-service'
+import { supabase } from './supabase-client'
 
 interface AuthContextType {
   user: User | null
@@ -20,25 +21,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is already logged in
-    const currentUser = auth.getCurrentUser()
-    setUser(currentUser)
-    setLoading(false)
+    const checkUser = async () => {
+      try {
+        const currentUser = await SupabaseService.getCurrentUser()
+        setUser(currentUser)
+      } catch (error) {
+        console.error('Error checking current user:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkUser()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        try {
+          const userData = await SupabaseService.getCurrentUser()
+          setUser(userData)
+        } catch (error) {
+          console.error('Error fetching user data:', error)
+          setUser(null)
+        }
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const signIn = async (email: string, password: string): Promise<User> => {
-    const user = await auth.signIn(email, password)
+    const user = await SupabaseService.signIn(email, password)
     setUser(user)
     return user
   }
 
   const signUp = async (email: string, password: string, userData: Partial<User>): Promise<User> => {
-    const user = await auth.signUp(email, password, userData)
+    const user = await SupabaseService.signUp(email, password, userData)
     setUser(user)
     return user
   }
 
   const signOut = async (): Promise<void> => {
-    await auth.signOut()
+    await SupabaseService.signOut()
     setUser(null)
   }
 

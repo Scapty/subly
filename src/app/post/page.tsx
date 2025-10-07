@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { database } from '@/lib/supabase'
+import { SupabaseService } from '@/lib/supabase-service'
+import { Listing, User } from '@/lib/supabase-client'
 import { Home, Plus, LogOut, Heart, MessageCircle } from 'lucide-react'
 
 interface ApartmentForm {
@@ -26,8 +27,8 @@ export default function Post() {
   const { user, signOut } = useAuth()
   const router = useRouter()
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
-  const [myApartment, setMyApartment] = useState<any>(null)
-  const [likesReceived, setLikesReceived] = useState<any[]>([])
+  const [myApartment, setMyApartment] = useState<Listing | null>(null)
+  const [likesReceived, setLikesReceived] = useState<User[]>([])
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ApartmentForm>()
 
@@ -42,33 +43,45 @@ export default function Post() {
       return
     }
 
-    // Check if user already has an apartment
-    const existingApartments = database.getApartmentsByLandlord(user.id)
-    if (existingApartments.length > 0) {
-      setMyApartment(existingApartments[0])
-      // Get likes for this apartment
-      const likes = database.getUsersWhoLikedApartment(existingApartments[0].id)
-      setLikesReceived(likes)
+    // Check if user already has listings
+    const fetchUserListings = async () => {
+      try {
+        const existingListings = await SupabaseService.getListingsByLandlord(user.id)
+        if (existingListings.length > 0) {
+          setMyApartment(existingListings[0])
+          // Get users who liked this listing
+          const likes = await SupabaseService.getUsersWhoLikedListing(existingListings[0].id)
+          setLikesReceived(likes)
+        }
+      } catch (error) {
+        console.error('Error fetching listings:', error)
+      }
     }
+
+    fetchUserListings()
   }, [user, router])
 
-  const onSubmit = (data: ApartmentForm) => {
+  const onSubmit = async (data: ApartmentForm) => {
     if (!user) return
 
-    const apartmentData = {
-      ...data,
-      photos: [
-        'https://picsum.photos/400/300?random=100',
-        'https://picsum.photos/400/300?random=101',
-      ],
-      amenities: selectedAmenities,
-      landlordId: user.id,
-    }
+    try {
+      const listingData = {
+        ...data,
+        photos: [
+          'https://picsum.photos/400/300?random=100',
+          'https://picsum.photos/400/300?random=101',
+        ],
+        amenities: selectedAmenities,
+        landlord_id: user.id,
+      }
 
-    const newApartment = database.createApartment(apartmentData)
-    setMyApartment(newApartment)
-    reset()
-    setSelectedAmenities([])
+      const newListing = await SupabaseService.createListing(listingData)
+      setMyApartment(newListing)
+      reset()
+      setSelectedAmenities([])
+    } catch (error) {
+      console.error('Error creating listing:', error)
+    }
   }
 
   const toggleAmenity = (amenity: string) => {
@@ -79,17 +92,21 @@ export default function Post() {
     )
   }
 
-  const handleLikeBack = (userId: string) => {
+  const handleLikeBack = async (userId: string) => {
     if (!user || !myApartment) return
 
-    // Create a match
-    database.createMatch(userId, user.id, myApartment.id)
+    try {
+      // Create a match
+      await SupabaseService.createMatch(userId, user.id, myApartment.id)
 
-    // Remove from likes list (they're now matched)
-    setLikesReceived(prev => prev.filter(like => like.id !== userId))
+      // Remove from likes list (they're now matched)
+      setLikesReceived(prev => prev.filter(like => like.id !== userId))
 
-    // Show success message or navigate
-    alert('Match créé ! 🎉')
+      // Show success message or navigate
+      alert('Match créé ! 🎉')
+    } catch (error) {
+      console.error('Error creating match:', error)
+    }
   }
 
   const handleSignOut = async () => {
