@@ -3,6 +3,15 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
+// Debug: Log environment variables in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 Supabase Config:', {
+    url: supabaseUrl,
+    keyLength: supabaseAnonKey.length,
+    isPlaceholder: supabaseUrl.includes('placeholder')
+  })
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Database types

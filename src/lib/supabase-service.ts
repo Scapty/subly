@@ -4,8 +4,10 @@ import { User, Listing, Message, Like, Match } from './supabase-client'
 export class SupabaseService {
   // Authentication
   static async signUp(email: string, password: string, userData: Partial<User>) {
+    const normalizedEmail = email.trim().toLowerCase()
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
     })
 
@@ -17,7 +19,7 @@ export class SupabaseService {
         .from('users')
         .insert({
           id: authData.user.id,
-          email,
+          email: normalizedEmail,
           name: userData.name || 'User',
           role: userData.role || 'seeker',
           interests: userData.interests || [],
@@ -34,12 +36,17 @@ export class SupabaseService {
   }
 
   static async signIn(email: string, password: string) {
+    const normalizedEmail = email.trim().toLowerCase()
+
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password,
     })
 
-    if (authError) throw authError
+    if (authError) {
+      console.error('Auth error:', authError)
+      throw new Error('Email ou mot de passe incorrect')
+    }
 
     if (authData.user) {
       const { data: userData, error: userError } = await supabase
@@ -48,11 +55,16 @@ export class SupabaseService {
         .eq('id', authData.user.id)
         .single()
 
-      if (userError) throw userError
+      if (userError) {
+        console.error('User data error:', userError)
+        // Déconnecter l'utilisateur si ses données n'existent pas
+        await supabase.auth.signOut()
+        throw new Error('Email ou mot de passe incorrect')
+      }
       return userData
     }
 
-    throw new Error('No user found')
+    throw new Error('Email ou mot de passe incorrect')
   }
 
   static async signOut() {
@@ -71,7 +83,15 @@ export class SupabaseService {
       .eq('id', user.id)
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Error fetching user data:', error)
+      // Si l'utilisateur n'existe pas dans notre table, déconnecter
+      if (error.code === 'PGRST116') {
+        await supabase.auth.signOut()
+        return null
+      }
+      throw error
+    }
     return userData
   }
 

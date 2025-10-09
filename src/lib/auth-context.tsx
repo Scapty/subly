@@ -37,16 +37,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
+      console.log('Auth state change:', event, session?.user?.id)
+
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         try {
           const userData = await SupabaseService.getCurrentUser()
           setUser(userData)
         } catch (error) {
           console.error('Error fetching user data:', error)
           setUser(null)
+        } finally {
+          setLoading(false)
         }
-      } else {
-        setUser(null)
       }
     })
 
@@ -54,15 +62,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string): Promise<User> => {
-    const user = await SupabaseService.signIn(email, password)
-    setUser(user)
-    return user
+    try {
+      const user = await SupabaseService.signIn(email, password)
+      setUser(user)
+      return user
+    } catch (error) {
+      console.error('Sign in error:', error)
+      setUser(null)
+      throw error
+    }
   }
 
   const signUp = async (email: string, password: string, userData: Partial<User>): Promise<User> => {
-    const user = await SupabaseService.signUp(email, password, userData)
-    setUser(user)
-    return user
+    try {
+      const user = await SupabaseService.signUp(email, password, userData)
+      setUser(user)
+      return user
+    } catch (error) {
+      console.error('Sign up error:', error)
+      setUser(null)
+      throw error
+    }
   }
 
   const signOut = async (): Promise<void> => {
