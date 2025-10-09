@@ -68,7 +68,7 @@ export default function SearchPage() {
     if (searchQuery) {
       filtered = filtered.filter(listing =>
         listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        listing.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (listing.neighborhood || listing.location || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         listing.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
@@ -76,14 +76,14 @@ export default function SearchPage() {
     // Location filter
     if (filters.location) {
       filtered = filtered.filter(listing =>
-        listing.location.toLowerCase().includes(filters.location.toLowerCase())
+        (listing.neighborhood || listing.location || '').toLowerCase().includes(filters.location.toLowerCase())
       )
     }
 
     // Price filter
     if (filters.maxPrice) {
       const maxPrice = parseInt(filters.maxPrice)
-      filtered = filtered.filter(listing => listing.price <= maxPrice)
+      filtered = filtered.filter(listing => (listing.rent_amount || listing.price || 0) <= maxPrice)
     }
 
     // Property type filter
@@ -100,7 +100,7 @@ export default function SearchPage() {
     // Availability filter
     if (filters.available) {
       filtered = filtered.filter(listing =>
-        listing.available.toLowerCase().includes(filters.available.toLowerCase())
+        (listing.available_from || listing.available || '').toLowerCase().includes(filters.available.toLowerCase())
       )
     }
 

@@ -17,6 +17,7 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [matchId, setMatchId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<any>(null)
 
@@ -24,7 +25,6 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
     if (!user) return
 
     loadMessages()
-    setupRealtimeSubscription()
 
     return () => {
       if (channelRef.current) {
@@ -34,6 +34,12 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
   }, [user, otherUser])
 
   useEffect(() => {
+    if (matchId) {
+      setupRealtimeSubscription()
+    }
+  }, [matchId])
+
+  useEffect(() => {
     scrollToBottom()
   }, [messages])
 
@@ -41,7 +47,16 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
     if (!user) return
 
     try {
-      const messageData = await SupabaseService.getMessages(user.id, otherUser.id)
+      // First find the match between the two users
+      const match = await SupabaseService.getMatchBetweenUsers(user.id, otherUser.id)
+      if (!match) {
+        console.error('No match found between users')
+        setLoading(false)
+        return
+      }
+
+      setMatchId(match.id)
+      const messageData = await SupabaseService.getMessages(match.id)
       setMessages(messageData)
     } catch (error) {
       console.error('Error loading messages:', error)
@@ -51,11 +66,10 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
   }
 
   const setupRealtimeSubscription = () => {
-    if (!user) return
+    if (!user || !matchId) return
 
     channelRef.current = SupabaseService.subscribeToMessages(
-      user.id,
-      otherUser.id,
+      matchId,
       (newMessage: Message) => {
         setMessages(prev => [...prev, newMessage])
       }
@@ -64,11 +78,11 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !newMessage.trim() || sending) return
+    if (!user || !newMessage.trim() || sending || !matchId) return
 
     setSending(true)
     try {
-      await SupabaseService.sendMessage(user.id, otherUser.id, newMessage.trim())
+      await SupabaseService.sendMessage(matchId, user.id, newMessage.trim())
       setNewMessage('')
     } catch (error) {
       console.error('Error sending message:', error)
@@ -106,12 +120,14 @@ export default function ChatInterface({ otherUser, onBack }: ChatInterfaceProps)
 
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold">
-            {otherUser.name.charAt(0)}
+            {(otherUser.first_name || otherUser.name || 'U').charAt(0)}
           </div>
           <div>
-            <h3 className="font-semibold text-dark-gray">{otherUser.name}</h3>
+            <h3 className="font-semibold text-dark-gray">
+              {otherUser.first_name ? `${otherUser.first_name} ${otherUser.last_name || ''}`.trim() : otherUser.name || 'User'}
+            </h3>
             <div className="flex space-x-1">
-              {otherUser.interests?.slice(0, 2).map((interest) => (
+              {(otherUser.hobbies || otherUser.interests || [])?.slice(0, 2).map((interest) => (
                 <span key={interest} className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
                   {interest}
                 </span>

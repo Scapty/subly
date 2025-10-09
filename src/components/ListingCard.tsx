@@ -85,12 +85,17 @@ export default function ListingCard({ listing, onClick, showLikeButton = false, 
         {listing.landlord && (
           <div className="flex items-center space-x-2 pt-3 border-t border-gray-100">
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white text-sm font-bold">
-              {listing.landlord.name.charAt(0)}
+              {(listing.landlord.first_name || listing.landlord.name || 'L').charAt(0)}
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-dark-gray">{listing.landlord.name}</p>
+              <p className="text-sm font-medium text-dark-gray">
+                {listing.landlord.first_name
+                  ? `${listing.landlord.first_name} ${listing.landlord.last_name || ''}`.trim()
+                  : listing.landlord.name || 'Landlord'
+                }
+              </p>
               <div className="flex space-x-1">
-                {listing.landlord.interests?.slice(0, 2).map((interest) => (
+                {(listing.landlord.hobbies || listing.landlord.interests || [])?.slice(0, 2).map((interest) => (
                   <span key={interest} className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">
                     {interest}
                   </span>

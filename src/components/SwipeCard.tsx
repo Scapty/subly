@@ -3,16 +3,17 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { Listing } from '@/lib/supabase-client'
-import { MapPin, Euro, Calendar, X, Heart, Eye } from 'lucide-react'
+import { MapPin, Euro, Calendar, X, Heart, Eye, Star } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface SwipeCardProps {
   listing: Listing
   onSwipe: (direction: 'left' | 'right') => void
   isTopCard: boolean
+  compatibilityScore?: number
 }
 
-export default function SwipeCard({ listing, onSwipe, isTopCard }: SwipeCardProps) {
+export default function SwipeCard({ listing, onSwipe, isTopCard, compatibilityScore }: SwipeCardProps) {
   const router = useRouter()
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -142,8 +143,16 @@ export default function SwipeCard({ listing, onSwipe, isTopCard }: SwipeCardProp
           fill
           className="object-cover"
         />
-        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
-          <span className="text-lg font-bold text-primary">{listing.price}€</span>
+        <div className="absolute top-4 right-4 space-y-2">
+          <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
+            <span className="text-lg font-bold text-primary">{listing.rent_amount || listing.price}€</span>
+          </div>
+          {compatibilityScore && (
+            <div className="bg-green-500 text-white px-2 py-1 rounded-full text-sm font-medium flex items-center">
+              <Star className="w-3 h-3 mr-1" />
+              {compatibilityScore}%
+            </div>
+          )}
         </div>
         {/* View details button */}
         {isTopCard && (
@@ -168,12 +177,12 @@ export default function SwipeCard({ listing, onSwipe, isTopCard }: SwipeCardProp
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-gray-600">
             <MapPin className="w-4 h-4 mr-2" />
-            <span>{listing.location}</span>
+            <span>{listing.neighborhood || listing.location}</span>
           </div>
 
           <div className="flex items-center text-gray-600">
             <Calendar className="w-4 h-4 mr-2" />
-            <span>Disponible {listing.available}</span>
+            <span>Disponible {listing.available_from || listing.available}</span>
           </div>
         </div>
 

@@ -230,12 +230,14 @@ export default function ListingDetailPage() {
             <h2 className="text-lg font-semibold mb-3">Propriétaire</h2>
             <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
               <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white text-xl font-bold">
-                {listing.landlord.name.charAt(0)}
+                {(listing.landlord.first_name || listing.landlord.name || 'U').charAt(0)}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-dark-gray">{listing.landlord.name}</h3>
+                <h3 className="font-semibold text-dark-gray">
+                  {listing.landlord.first_name || listing.landlord.name || 'Utilisateur'} {listing.landlord.last_name || ''}
+                </h3>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {listing.landlord.interests?.map((interest) => (
+                  {(listing.landlord.hobbies || listing.landlord.interests || []).map((interest) => (
                     <span key={interest} className="bg-white px-3 py-1 rounded-full text-sm text-gray-700">
                       {interest}
                     </span>

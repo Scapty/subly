@@ -1,20 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+// ===========================
+// NOUVEAUX TYPES TYPESCRIPT
+// Pour la refonte matching logement
+// ===========================
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-
-// Debug: Log environment variables in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 Supabase Config:', {
-    url: supabaseUrl,
-    keyLength: supabaseAnonKey.length,
-    isPlaceholder: supabaseUrl.includes('placeholder')
-  })
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Types de base
+// Enums et types de base
 export type Gender = 'homme' | 'femme' | 'autre' | 'non-précisé'
 export type SleepSchedule = 'early' | 'normal' | 'late' | 'flexible'
 export type WeekendActivity = 'sortir' | 'maison' | 'flexible'
@@ -33,7 +22,37 @@ export interface Lifestyle {
   cohabitation_style: CohabitationStyle
 }
 
-// Interface utilisateur (version mise à jour)
+// Listes d'options prédéfinies
+export const HOBBIES_OPTIONS = [
+  'sport', 'musique', 'lecture', 'nature', 'cuisine', 'voyage',
+  'cinéma', 'photographie', 'gaming', 'art', 'danse', 'yoga',
+  'bricolage', 'jardinage', 'mode', 'technologie'
+] as const
+
+export const AMENITIES_OPTIONS = [
+  'machine_a_laver', 'lave_vaisselle', 'balcon', 'jardin', 'parking',
+  'ascenseur', 'climatisation', 'cheminee', 'cave', 'wifi_fibre',
+  'salle_de_sport', 'piscine', 'concierge', 'interphone'
+] as const
+
+export const RULES_OPTIONS = [
+  'non_fumeur', 'animaux_ok', 'calme_requis', 'fêtes_ok',
+  'amis_ok', 'couple_ok', 'étudiant_ok', 'professionnel_ok'
+] as const
+
+export const NEIGHBORHOODS_PARIS = [
+  '1er arrondissement', '2ème arrondissement', '3ème arrondissement',
+  '4ème arrondissement', '5ème arrondissement', '6ème arrondissement',
+  '7ème arrondissement', '8ème arrondissement', '9ème arrondissement',
+  '10ème arrondissement', '11ème arrondissement', '12ème arrondissement',
+  '13ème arrondissement', '14ème arrondissement', '15ème arrondissement',
+  '16ème arrondissement', '17ème arrondissement', '18ème arrondissement',
+  '19ème arrondissement', '20ème arrondissement',
+  'Boulogne-Billancourt', 'Neuilly-sur-Seine', 'Vincennes',
+  'Montreuil', 'Saint-Denis', 'Levallois-Perret'
+] as const
+
+// Interface utilisateur (nouvelle version)
 export interface User {
   id: string
   email: string
@@ -60,14 +79,9 @@ export interface User {
   // Timestamps
   created_at: string
   updated_at: string
-
-  // Compatibilité avec l'ancien système (à supprimer plus tard)
-  name?: string
-  role?: 'seeker' | 'landlord'
-  interests?: string[]
 }
 
-// Interface annonce logement (version mise à jour)
+// Interface annonce logement (nouvelle version)
 export interface Listing {
   id: string
   landlord_id: string
@@ -110,28 +124,14 @@ export interface Listing {
   // Timestamps
   created_at: string
   updated_at: string
-
-  // Compatibilité avec l'ancien système (à supprimer plus tard)
-  location?: string
-  price?: number
-  available?: string
-  rooms?: number
-  size?: number
 }
 
-// Interface like (mise à jour)
+// Interface like (simplifiée)
 export interface Like {
   id: string
-  liker_id: string // celui qui like
-  listing_id: string // l'annonce
+  liker_id: string
+  listing_id: string
   created_at: string
-
-  // Relations
-  liker?: User
-  listing?: Listing
-
-  // Compatibilité avec l'ancien système
-  user_id?: string
 }
 
 // Interface match (enrichie)
@@ -155,12 +155,9 @@ export interface Match {
   // Timestamps
   matched_at: string
   updated_at: string
-
-  // Compatibilité avec l'ancien système
-  created_at?: string
 }
 
-// Interface message (mise à jour)
+// Interface message
 export interface Message {
   id: string
   match_id: string
@@ -170,17 +167,66 @@ export interface Message {
 
   // Relations
   sender?: User
-  receiver?: User
   match?: Match
 
   // Timestamps
   created_at: string
-
-  // Compatibilité avec l'ancien système
-  receiver_id?: string
 }
 
-// Types pour les filtres de recherche
+// ===========================
+// TYPES POUR LES FORMULAIRES
+// ===========================
+
+// Form data pour l'inscription simplifiée
+export interface RegisterFormData {
+  first_name: string
+  last_name: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+// Form data pour le setup de profil
+export interface ProfileSetupFormData {
+  avatar_url?: string
+  description: string
+  age: number
+  gender?: Gender
+  hobbies: string[]
+  lifestyle: Lifestyle
+  preferred_roommate_count?: number
+  preferred_age_min?: number
+  preferred_age_max?: number
+  preferred_gender?: Gender
+}
+
+// Form data pour créer une annonce
+export interface ListingFormData {
+  title: string
+  description: string
+  photos: string[]
+  address: string
+  neighborhood: string
+  rent_amount: number
+  charges_included: boolean
+  available_from: string
+  minimum_duration_months: number
+  property_type: string
+  total_rooms?: number
+  available_rooms?: number
+  apartment_size?: number
+  furnished: boolean
+  amenities: string[]
+  rules: string[]
+  current_roommate_count: number
+  current_roommate_ages: number[]
+  roommate_lifestyle: Lifestyle
+}
+
+// ===========================
+// TYPES POUR LES FILTRES
+// ===========================
+
 export interface SearchFilters {
   neighborhoods?: string[]
   rent_min?: number
@@ -193,9 +239,13 @@ export interface SearchFilters {
   rules?: string[]
   roommate_count_min?: number
   roommate_count_max?: number
-  age_compatibility?: boolean
-  lifestyle_compatibility?: boolean
+  age_compatibility?: boolean // filtrer selon préférences d'âge
+  lifestyle_compatibility?: boolean // filtrer selon compatibilité lifestyle
 }
+
+// ===========================
+// TYPES POUR LE MATCHING
+// ===========================
 
 // Résultat de calcul de compatibilité
 export interface CompatibilityResult {
@@ -208,6 +258,13 @@ export interface CompatibilityResult {
   }
   strengths: string[] // points forts du match
   potential_issues: string[] // points d'attention
+}
+
+// Recommandation de listing avec score
+export interface ListingRecommendation {
+  listing: Listing
+  compatibility: CompatibilityResult
+  match_reasons: string[] // pourquoi recommandé
 }
 
 // Les types sont exportés individuellement avec le mot-clé export

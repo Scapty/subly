@@ -1,36 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { SupabaseService } from '@/lib/supabase-service'
-import { Listing, User } from '@/lib/supabase-client'
-import { Home, Plus, LogOut, Heart, MessageCircle } from 'lucide-react'
-
-interface ApartmentForm {
-  title: string
-  price: number
-  location: string
-  available: string
-  description: string
-  amenities: string[]
-}
-
-const amenityOptions = [
-  'WiFi', 'Cuisine équipée', 'Douche', 'Balcon', 'Lave-vaisselle',
-  'Salon commun', 'Terrasse', 'Parking', 'Cave', 'Lave-linge',
-  'Climatisation', 'Chauffage', 'Ascenseur'
-]
+import { Listing } from '@/lib/supabase-client'
+import { Home, Plus, LogOut, Heart, MessageCircle, Edit, Eye } from 'lucide-react'
 
 export default function Post() {
   const { user, signOut } = useAuth()
   const router = useRouter()
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
-  const [myApartment, setMyApartment] = useState<Listing | null>(null)
-  const [likesReceived, setLikesReceived] = useState<User[]>([])
-
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ApartmentForm>()
+  const [myListings, setMyListings] = useState<Listing[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) {
@@ -38,308 +19,186 @@ export default function Post() {
       return
     }
 
-    if (user.role !== 'landlord') {
-      router.push('/home')
+    if (!user.profile_completed) {
+      router.push('/setup-profile')
       return
     }
 
-    // Check if user already has listings
-    const fetchUserListings = async () => {
-      try {
-        const existingListings = await SupabaseService.getListingsByLandlord(user.id)
-        if (existingListings.length > 0) {
-          setMyApartment(existingListings[0])
-          // Get users who liked this listing
-          const likes = await SupabaseService.getUsersWhoLikedListing(existingListings[0].id)
-          setLikesReceived(likes)
-        }
-      } catch (error) {
-        console.error('Error fetching listings:', error)
-      }
-    }
-
-    fetchUserListings()
+    loadMyListings()
   }, [user, router])
 
-  const onSubmit = async (data: ApartmentForm) => {
+  const loadMyListings = async () => {
     if (!user) return
 
     try {
-      const listingData = {
-        ...data,
-        photos: [
-          'https://picsum.photos/400/300?random=100',
-          'https://picsum.photos/400/300?random=101',
-        ],
-        amenities: selectedAmenities,
-        landlord_id: user.id,
-      }
-
-      const newListing = await SupabaseService.createListing(listingData)
-      setMyApartment(newListing)
-      reset()
-      setSelectedAmenities([])
+      const listings = await SupabaseService.getListingsByLandlord(user.id)
+      setMyListings(listings)
     } catch (error) {
-      console.error('Error creating listing:', error)
+      console.error('Error loading listings:', error)
+    } finally {
+      setLoading(false)
     }
-  }
-
-  const toggleAmenity = (amenity: string) => {
-    setSelectedAmenities(prev =>
-      prev.includes(amenity)
-        ? prev.filter(a => a !== amenity)
-        : [...prev, amenity]
-    )
-  }
-
-  const handleLikeBack = async (userId: string) => {
-    if (!user || !myApartment) return
-
-    try {
-      // Create a match
-      await SupabaseService.createMatch(userId, user.id, myApartment.id)
-
-      // Remove from likes list (they're now matched)
-      setLikesReceived(prev => prev.filter(like => like.id !== userId))
-
-      // Show success message or navigate
-      alert('Match créé ! 🎉')
-    } catch (error) {
-      console.error('Error creating match:', error)
-    }
-  }
-
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
   }
 
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-secondary/10">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white shadow-sm">
-        <div>
-          <h1 className="text-xl font-display font-bold text-dark-gray">
-            Sublet
-          </h1>
-          <p className="text-sm text-gray-600">Salut {user.name} ! 🏠</p>
-        </div>
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-display font-bold text-dark-gray">
+                🏠 Mes annonces
+              </h1>
+            </div>
 
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => router.push('/create-listing')}
-            className="p-2 bg-accent/10 text-accent rounded-lg hover:bg-accent/20 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+            <div className="flex items-center space-x-3">
+              {/* Home */}
+              <button
+                onClick={() => router.push('/home')}
+                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                <Home className="w-5 h-5" />
+              </button>
 
-          <button
-            onClick={() => router.push('/matches')}
-            className="p-2 bg-secondary/10 text-secondary rounded-lg hover:bg-secondary/20 transition-colors"
-          >
-            <MessageCircle className="w-5 h-5" />
-          </button>
+              {/* Messages */}
+              <button
+                onClick={() => router.push('/matches')}
+                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
 
-          <button
-            onClick={handleSignOut}
-            className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+              {/* Profile menu */}
+              <button
+                onClick={() => signOut()}
+                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 max-w-md mx-auto">
-        {!myApartment ? (
-          // Apartment posting form
-          <div className="space-y-6">
-            <div className="text-center">
-              <Home className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-dark-gray mb-2">
-                Poste ton logement
-              </h2>
-              <p className="text-gray-600">
-                Trouve le colocataire parfait !
-              </p>
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Create new listing button */}
+        <div className="mb-8">
+          <button
+            onClick={() => router.push('/create-listing')}
+            className="w-full btn-primary flex items-center justify-center space-x-2 text-lg py-4"
+          >
+            <Plus className="w-6 h-6" />
+            <span>Créer une nouvelle annonce</span>
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement de vos annonces...</p>
+          </div>
+        ) : myListings.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-6">
+              <Home className="w-16 h-16 mx-auto" />
             </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="card p-6">
-                <h3 className="font-semibold mb-4">Informations de base</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Titre
-                    </label>
-                    <input
-                      {...register('title', { required: 'Titre requis' })}
-                      className="input"
-                      placeholder="Ex: Studio cosy centre-ville"
-                    />
-                    {errors.title && (
-                      <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Prix (€/mois)
-                      </label>
-                      <input
-                        {...register('price', {
-                          required: 'Prix requis',
-                          min: { value: 1, message: 'Prix invalide' }
-                        })}
-                        type="number"
-                        className="input"
-                        placeholder="550"
-                      />
-                      {errors.price && (
-                        <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Quartier
-                      </label>
-                      <input
-                        {...register('location', { required: 'Quartier requis' })}
-                        className="input"
-                        placeholder="Quartier Latin"
-                      />
-                      {errors.location && (
-                        <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Disponibilité
-                    </label>
-                    <input
-                      {...register('available', { required: 'Disponibilité requise' })}
-                      className="input"
-                      placeholder="Ex: Immédiatement, Mars 2024"
-                    />
-                    {errors.available && (
-                      <p className="text-red-500 text-sm mt-1">{errors.available.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      {...register('description', { required: 'Description requise' })}
-                      rows={4}
-                      className="input resize-none"
-                      placeholder="Décris ton logement, l'ambiance, ce qui le rend spécial..."
-                    />
-                    {errors.description && (
-                      <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="card p-6">
-                <h3 className="font-semibold mb-4">Équipements</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {amenityOptions.map((amenity) => (
-                    <button
-                      key={amenity}
-                      type="button"
-                      onClick={() => toggleAmenity(amenity)}
-                      className={`p-3 rounded-lg text-sm font-medium transition-all ${
-                        selectedAmenities.includes(amenity)
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {amenity}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full btn-primary"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Publier mon logement
-              </button>
-            </form>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Aucune annonce pour le moment
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Créez votre première annonce pour commencer à recevoir des candidatures
+            </p>
+            <button
+              onClick={() => router.push('/create-listing')}
+              className="btn-primary"
+            >
+              Créer ma première annonce
+            </button>
           </div>
         ) : (
-          // Apartment posted - show likes
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h2 className="text-xl font-bold text-dark-gray mb-2">
-                {myApartment.title}
-              </h2>
-              <div className="flex items-center justify-between text-gray-600">
-                <span>{myApartment.location}</span>
-                <span className="text-primary font-bold">{myApartment.price}€</span>
-              </div>
-              <p className="text-gray-700 mt-2">{myApartment.description}</p>
-            </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              Vos annonces ({myListings.length})
+            </h2>
 
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-dark-gray mb-4 flex items-center">
-                <Heart className="w-5 h-5 mr-2 text-primary" />
-                Likes reçus ({likesReceived.length})
-              </h3>
-
-              {likesReceived.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-2">⏳</div>
-                  <p className="text-gray-600">
-                    Aucun like pour l'instant...
-                    <br />
-                    Sois patient, ça va venir !
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {likesReceived.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold">
-                          {user.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-dark-gray">{user.name}</p>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {user.interests.slice(0, 2).map((interest: string) => (
-                              <span key={interest} className="text-xs bg-white px-2 py-1 rounded-full text-gray-600">
-                                {interest}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {myListings.map((listing) => (
+                <div key={listing.id} className="card overflow-hidden">
+                  {/* Image */}
+                  <div className="relative h-48">
+                    <img
+                      src={listing.photos[0] || 'https://picsum.photos/400/300?random=default'}
+                      alt={listing.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
+                      <span className="text-sm font-bold text-primary">
+                        {listing.rent_amount || listing.price}€
+                      </span>
+                    </div>
+                    {!listing.is_active && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                          Inactive
+                        </span>
                       </div>
+                    )}
+                  </div>
 
+                  {/* Content */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-800 mb-2">
+                      {listing.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {listing.neighborhood || listing.location}
+                    </p>
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                      <span>Créé le {new Date(listing.created_at).toLocaleDateString('fr-FR')}</span>
+                      <span>{listing.is_active ? 'Active' : 'Inactive'}</span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex space-x-2">
                       <button
-                        onClick={() => handleLikeBack(user.id)}
-                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                        onClick={() => router.push(`/listing/${listing.id}`)}
+                        className="flex-1 btn-secondary text-sm py-2 flex items-center justify-center"
                       >
-                        Like back
+                        <Eye className="w-4 h-4 mr-1" />
+                        Voir
+                      </button>
+                      <button
+                        onClick={() => router.push(`/create-listing?edit=${listing.id}`)}
+                        className="flex-1 btn-primary text-sm py-2 flex items-center justify-center"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Modifier
                       </button>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}
+
+        {/* Info section */}
+        <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="font-semibold text-blue-800 mb-3">
+            💡 Conseils pour optimiser vos annonces
+          </h3>
+          <ul className="text-sm text-blue-700 space-y-2">
+            <li>• Ajoutez des photos de qualité pour attirer plus de candidats</li>
+            <li>• Décrivez précisément l'ambiance de la colocation</li>
+            <li>• Mentionnez les équipements et commodités disponibles</li>
+            <li>• Soyez transparents sur les règles de vie en colocation</li>
+          </ul>
+        </div>
       </div>
     </div>
   )

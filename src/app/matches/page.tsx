@@ -185,7 +185,7 @@ export default function Matches() {
                 {/* Match date */}
                 <div className="mt-3 pt-3 border-t border-gray-100 text-center">
                   <p className="text-xs text-gray-500">
-                    Match créé le {new Date(match.created_at).toLocaleDateString('fr-FR')}
+                    Match créé le {new Date(match.matched_at || match.created_at || new Date()).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>

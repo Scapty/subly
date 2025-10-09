@@ -5,27 +5,21 @@ import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
-import { User, Heart, ArrowLeft } from 'lucide-react'
+import { User, ArrowLeft } from 'lucide-react'
+import { RegisterFormData } from '@/types/new-types'
 
 interface RegisterForm {
-  name: string
+  first_name: string
+  last_name: string
   email: string
   password: string
   confirmPassword: string
-  role: 'seeker' | 'landlord'
-  interests: string[]
 }
-
-const interestOptions = [
-  'non-fumeur', 'calme', 'étudiant', 'animal ok', 'soirées ok',
-  'vegan', 'sport', 'musique', 'cuisine', 'télétravail'
-]
 
 export default function Register() {
   const { signUp } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([])
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>()
   const password = watch('password')
@@ -38,30 +32,18 @@ export default function Register() {
     setLoading(true)
     try {
       await signUp(data.email, data.password, {
-        name: data.name,
-        role: data.role,
-        interests: selectedInterests,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        profile_completed: false
       })
 
-      // Redirect based on role
-      if (data.role === 'seeker') {
-        router.push('/home')
-      } else {
-        router.push('/post')
-      }
+      // Redirection vers setup de profil
+      router.push('/setup-profile')
     } catch (error) {
       console.error('Registration error:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleInterest = (interest: string) => {
-    setSelectedInterests(prev =>
-      prev.includes(interest)
-        ? prev.filter(i => i !== interest)
-        : [...prev, interest]
-    )
   }
 
   return (
@@ -76,167 +58,142 @@ export default function Register() {
           </h1>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <User className="w-5 h-5 mr-2 text-primary" />
-              Informations personnelles
+        <div className="card p-6 mb-6">
+          <div className="text-center mb-6">
+            <User className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-gray-800">
+              Bienvenue sur Sublet !
             </h2>
+            <p className="text-gray-600">
+              Créé ton compte pour trouver ta colocation idéale
+            </p>
+          </div>
 
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom complet
+                  Prénom
                 </label>
                 <input
-                  {...register('name', { required: 'Nom requis' })}
+                  {...register('first_name', { required: 'Prénom requis' })}
+                  className="input"
+                  placeholder="Ton prénom"
+                />
+                {errors.first_name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.first_name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom
+                </label>
+                <input
+                  {...register('last_name', { required: 'Nom requis' })}
                   className="input"
                   placeholder="Ton nom"
                 />
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  {...register('email', {
-                    required: 'Email requis',
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Email invalide'
-                    }
-                  })}
-                  type="email"
-                  className="input"
-                  placeholder="ton@email.com"
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mot de passe
-                </label>
-                <input
-                  {...register('password', {
-                    required: 'Mot de passe requis',
-                    minLength: {
-                      value: 6,
-                      message: 'Minimum 6 caractères'
-                    }
-                  })}
-                  type="password"
-                  className="input"
-                  placeholder="••••••••"
-                />
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirmer le mot de passe
-                </label>
-                <input
-                  {...register('confirmPassword', {
-                    required: 'Confirmation requise',
-                    validate: value => value === password || 'Les mots de passe ne correspondent pas'
-                  })}
-                  type="password"
-                  className="input"
-                  placeholder="••••••••"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                {errors.last_name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.last_name.message}</p>
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-4">
-              Tu es...
-            </h2>
-
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  {...register('role', { required: 'Choix requis' })}
-                  type="radio"
-                  value="seeker"
-                  className="text-primary focus:ring-primary"
-                />
-                <div>
-                  <div className="font-medium">🔍 Je cherche un logement</div>
-                  <div className="text-sm text-gray-600">Swipe pour trouver ton appart idéal</div>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
               </label>
+              <input
+                {...register('email', {
+                  required: 'Email requis',
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: 'Email invalide'
+                  }
+                })}
+                type="email"
+                className="input"
+                placeholder="ton@email.com"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+              )}
+            </div>
 
-              <label className="flex items-center space-x-3 p-4 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                <input
-                  {...register('role', { required: 'Choix requis' })}
-                  type="radio"
-                  value="landlord"
-                  className="text-primary focus:ring-primary"
-                />
-                <div>
-                  <div className="font-medium">🏠 Je loue un logement</div>
-                  <div className="text-sm text-gray-600">Trouve le colocataire parfait</div>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mot de passe
               </label>
+              <input
+                {...register('password', {
+                  required: 'Mot de passe requis',
+                  minLength: {
+                    value: 6,
+                    message: 'Minimum 6 caractères'
+                  }
+                })}
+                type="password"
+                className="input"
+                placeholder="••••••••"
+              />
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+              )}
             </div>
 
-            {errors.role && (
-              <p className="text-red-500 text-sm mt-2">{errors.role.message}</p>
-            )}
-          </div>
-
-          <div className="card p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <Heart className="w-5 h-5 mr-2 text-primary" />
-              Tes préférences
-            </h2>
-
-            <div className="grid grid-cols-2 gap-2">
-              {interestOptions.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  onClick={() => toggleInterest(interest)}
-                  className={`p-3 rounded-lg text-sm font-medium transition-all ${
-                    selectedInterests.includes(interest)
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {interest}
-                </button>
-              ))}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirmer le mot de passe
+              </label>
+              <input
+                {...register('confirmPassword', {
+                  required: 'Confirmation requise',
+                  validate: value => value === password || 'Les mots de passe ne correspondent pas'
+                })}
+                type="password"
+                className="input"
+                placeholder="••••••••"
+              />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>
+              )}
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Création...' : 'Créer mon compte'}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Création...' : 'Créer mon compte'}
+            </button>
+          </form>
+        </div>
 
-          <p className="text-center text-gray-600">
+        <div className="text-center space-y-3">
+          <p className="text-gray-600">
             Déjà un compte ?{' '}
             <Link href="/login" className="text-primary font-medium">
               Se connecter
             </Link>
           </p>
-        </form>
+
+          <div className="bg-blue-50 rounded-lg p-4">
+            <p className="text-sm text-blue-700">
+              🏠 <strong>Étape suivante :</strong> Tu pourras compléter ton profil<br />
+              et définir tes préférences de cohabitation !
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+          <h3 className="font-semibold text-blue-800 mb-2">🧪 Comptes de test:</h3>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p><strong>Utilisateur 1:</strong> alice@student.com</p>
+            <p><strong>Utilisateur 2:</strong> bob@student.com</p>
+            <p><strong>Mot de passe:</strong> password</p>
+          </div>
+        </div>
       </div>
     </div>
   )
