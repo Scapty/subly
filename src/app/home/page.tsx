@@ -83,16 +83,16 @@ export default function Home() {
     // Filtres de base
     if (filters.neighborhoods && filters.neighborhoods.length > 0) {
       filtered = filtered.filter(listing =>
-        filters.neighborhoods!.includes(listing.neighborhood)
+        filters.neighborhoods!.includes(listing.location)
       )
     }
 
     if (filters.rent_min) {
-      filtered = filtered.filter(listing => listing.rent_amount >= filters.rent_min!)
+      filtered = filtered.filter(listing => listing.price >= filters.rent_min!)
     }
 
     if (filters.rent_max) {
-      filtered = filtered.filter(listing => listing.rent_amount <= filters.rent_max!)
+      filtered = filtered.filter(listing => listing.price <= filters.rent_max!)
     }
 
     if (filters.property_type) {
@@ -117,16 +117,16 @@ export default function Home() {
       )
     }
 
-    // Filtres nombre de colocataires
+    // Filtres nombre de chambres (approximation pour le nombre de colocataires)
     if (filters.roommate_count_min) {
       filtered = filtered.filter(listing =>
-        listing.current_roommate_count >= filters.roommate_count_min!
+        listing.rooms >= filters.roommate_count_min!
       )
     }
 
     if (filters.roommate_count_max) {
       filtered = filtered.filter(listing =>
-        listing.current_roommate_count <= filters.roommate_count_max!
+        listing.rooms <= filters.roommate_count_max!
       )
     }
 

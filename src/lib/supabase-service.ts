@@ -26,25 +26,17 @@ export class SupabaseService {
     if (authError) throw authError
 
     if (authData.user) {
-      // Créer le profil utilisateur avec la nouvelle structure
+      // Créer le profil utilisateur avec la structure actuelle (name au lieu de first_name/last_name)
+      const fullName = `${userData.first_name || 'User'} ${userData.last_name || ''}`.trim()
+
       const { data: newUserData, error: userError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
           email: normalizedEmail,
-          first_name: userData.first_name || 'User',
-          last_name: userData.last_name || '',
-          profile_completed: userData.profile_completed || false,
-          hobbies: userData.hobbies || [],
-          lifestyle: userData.lifestyle || {
-            social_level: 3,
-            cleanliness: 3,
-            noise_sensitivity: 3,
-            sleep_schedule: 'normal',
-            weekend_activity: 'flexible',
-            guest_frequency: 'rarement',
-            cohabitation_style: 'amis'
-          }
+          name: fullName,
+          role: 'seeker', // Valeur par défaut
+          interests: []
         })
         .select()
         .single()
@@ -136,22 +128,14 @@ export class SupabaseService {
   }
 
   static async completeProfile(userId: string, profileData: {
-    avatar_url?: string
-    description: string
-    age: number
-    gender?: string
-    hobbies: string[]
-    lifestyle: Lifestyle
-    preferred_roommate_count?: number
-    preferred_age_min?: number
-    preferred_age_max?: number
-    preferred_gender?: string
+    avatar?: string
+    name?: string
+    interests?: string[]
   }) {
     const { data, error } = await supabase
       .from('users')
       .update({
         ...profileData,
-        profile_completed: true,
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
@@ -173,7 +157,6 @@ export class SupabaseService {
         *,
         landlord:users!landlord_id(*)
       `)
-      .eq('is_active', true)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -188,7 +171,6 @@ export class SupabaseService {
         landlord:users!landlord_id(*)
       `)
       .eq('id', id)
-      .eq('is_active', true)
       .single()
 
     if (error) {
@@ -255,10 +237,26 @@ export class SupabaseService {
     return data || []
   }
 
-  static async createListing(listingData: Omit<Listing, 'id' | 'created_at' | 'updated_at' | 'landlord'>): Promise<Listing> {
+  static async createListing(listingData: any): Promise<Listing> {
+    // Mapper les nouveaux champs vers les anciens pour la compatibilité
+    const mappedData = {
+      landlord_id: listingData.landlord_id,
+      title: listingData.title,
+      description: listingData.description,
+      photos: listingData.photos || [],
+      price: listingData.rent_amount || listingData.price || 0,
+      location: listingData.address || listingData.neighborhood || listingData.location || '',
+      available: listingData.available_from || listingData.available || 'À définir',
+      amenities: listingData.amenities || [],
+      property_type: listingData.property_type || 'apartment',
+      rooms: listingData.total_rooms || listingData.available_rooms || listingData.rooms || 1,
+      size: listingData.apartment_size || listingData.size,
+      rules: listingData.rules || []
+    }
+
     const { data, error } = await supabase
       .from('listings')
-      .insert(listingData)
+      .insert(mappedData)
       .select(`
         *,
         landlord:users!landlord_id(*)
@@ -305,11 +303,11 @@ export class SupabaseService {
   // LIKES
   // ===========================
 
-  static async likeListing(likerId: string, listingId: string): Promise<Like> {
+  static async likeListing(userId: string, listingId: string): Promise<Like> {
     const { data, error } = await supabase
       .from('likes')
       .insert({
-        liker_id: likerId,
+        user_id: userId,
         listing_id: listingId,
       })
       .select()
@@ -324,7 +322,7 @@ export class SupabaseService {
       .from('likes')
       .select(`
         *,
-        liker:users!liker_id(*)
+        user:users!user_id(*)
       `)
       .eq('listing_id', listingId)
 
@@ -336,12 +334,12 @@ export class SupabaseService {
     const { data, error } = await supabase
       .from('likes')
       .select(`
-        liker:users!liker_id(*)
+        user:users!user_id(*)
       `)
       .eq('listing_id', listingId)
 
     if (error) throw error
-    return (data?.map(like => like.liker).filter(Boolean) || []) as unknown as User[]
+    return (data?.map(like => like.user).filter(Boolean) || []) as unknown as User[]
   }
 
   static async getUserLikes(userId: string): Promise<Like[]> {
@@ -351,7 +349,7 @@ export class SupabaseService {
         *,
         listing:listings(*)
       `)
-      .eq('liker_id', userId)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -520,8 +518,8 @@ export class SupabaseService {
     let strengths: string[] = []
     let potential_issues: string[] = []
 
-    // 1. Compatibilité d'âge (25 points)
-    if (seeker.age && listing.current_roommate_ages.length > 0) {
+    // 1. Compatibilité d'âge (25 points) - Simplifié pour la structure actuelle
+    if (seeker.age && listing.current_roommate_ages && listing.current_roommate_ages.length > 0) {
       const averageAge = listing.current_roommate_ages.reduce((a, b) => a + b, 0) / listing.current_roommate_ages.length
       const ageDiff = Math.abs(seeker.age - averageAge)
 
@@ -542,7 +540,7 @@ export class SupabaseService {
       breakdown.age_compatibility = 15 // Score neutre si pas d'info
     }
 
-    // 2. Compatibilité lifestyle (35 points)
+    // 2. Compatibilité lifestyle (35 points) - Simplifié pour la structure actuelle
     if (seeker.lifestyle && listing.roommate_lifestyle) {
       let lifestyleScore = 0
 
@@ -598,12 +596,12 @@ export class SupabaseService {
     // 4. Correspondance des préférences (20 points)
     let preferencesScore = 0
 
-    // Nombre de colocataires souhaité vs actuel
+    // Nombre de chambres vs préférence (approximation)
     if (seeker.preferred_roommate_count !== undefined) {
-      if (seeker.preferred_roommate_count === listing.current_roommate_count) {
+      if (seeker.preferred_roommate_count === (listing.current_roommate_count || listing.rooms)) {
         preferencesScore += 10
         strengths.push('Nombre de colocataires idéal')
-      } else if (Math.abs(seeker.preferred_roommate_count - listing.current_roommate_count) <= 1) {
+      } else if (Math.abs(seeker.preferred_roommate_count - (listing.current_roommate_count || listing.rooms)) <= 1) {
         preferencesScore += 6
       } else {
         potential_issues.push('Nombre de colocataires non idéal')
@@ -612,9 +610,9 @@ export class SupabaseService {
       preferencesScore += 5
     }
 
-    // Préférences d'âge
+    // Préférences d'âge (simplifié pour la structure actuelle)
     if (seeker.preferred_age_min || seeker.preferred_age_max) {
-      const avgAge = listing.current_roommate_ages.length > 0
+      const avgAge = (listing.current_roommate_ages && listing.current_roommate_ages.length > 0)
         ? listing.current_roommate_ages.reduce((a, b) => a + b, 0) / listing.current_roommate_ages.length
         : 25
 

@@ -20,6 +20,7 @@ export default function Register() {
   const { signUp } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>()
   const password = watch('password')
@@ -30,6 +31,8 @@ export default function Register() {
     }
 
     setLoading(true)
+    setError(null)
+
     try {
       await signUp(data.email, data.password, {
         first_name: data.first_name,
@@ -39,8 +42,23 @@ export default function Register() {
 
       // Redirection vers setup de profil
       router.push('/setup-profile')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error)
+
+      // Gestion des erreurs spécifiques
+      if (error?.message?.includes('only request this after')) {
+        const match = error.message.match(/after (\d+) seconds/)
+        const seconds = match ? match[1] : '60'
+        setError(`Veuillez attendre ${seconds} secondes avant de réessayer.`)
+      } else if (error?.message?.includes('User already registered')) {
+        setError('Un compte existe déjà avec cette adresse email.')
+      } else if (error?.message?.includes('Invalid email')) {
+        setError('Adresse email invalide.')
+      } else if (error?.message?.includes('Password should be at least')) {
+        setError('Le mot de passe doit contenir au moins 6 caractères.')
+      } else {
+        setError('Erreur lors de la création du compte. Veuillez réessayer.')
+      }
     } finally {
       setLoading(false)
     }
@@ -68,6 +86,12 @@ export default function Register() {
               Créé ton compte pour trouver ta colocation idéale
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

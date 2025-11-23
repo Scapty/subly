@@ -33,105 +33,93 @@ export interface Lifestyle {
   cohabitation_style: CohabitationStyle
 }
 
-// Interface utilisateur (version mise à jour)
+// Interface utilisateur (adaptée à la structure DB actuelle)
 export interface User {
   id: string
   email: string
-  first_name: string
-  last_name: string
+  name: string // Structure actuelle de la DB
+  avatar?: string
+  role: 'seeker' | 'landlord'
+  interests: string[]
+
+  // Timestamps
+  created_at: string
+  updated_at: string
+
+  // Champs pour compatibilité avec le form d'inscription
+  first_name?: string
+  last_name?: string
   avatar_url?: string
   description?: string
   age?: number
   gender?: Gender
 
-  // Profil de compatibilité
-  hobbies: string[]
-  lifestyle: Lifestyle
+  // Profil de compatibilité (pour future mise à jour)
+  hobbies?: string[]
+  lifestyle?: Lifestyle
 
-  // Préférences de cohabitation
+  // Préférences de cohabitation (pour future mise à jour)
   preferred_roommate_count?: number
   preferred_age_min?: number
   preferred_age_max?: number
   preferred_gender?: Gender
 
-  // Status
-  profile_completed: boolean
-
-  // Timestamps
-  created_at: string
-  updated_at: string
-
-  // Compatibilité avec l'ancien système (à supprimer plus tard)
-  name?: string
-  role?: 'seeker' | 'landlord'
-  interests?: string[]
+  // Status (pour future mise à jour)
+  profile_completed?: boolean
 }
 
-// Interface annonce logement (version mise à jour)
+// Interface annonce logement (adaptée à la structure DB actuelle)
 export interface Listing {
   id: string
+  title: string
+  photos: string[]
+  price: number // Structure actuelle de la DB
+  location: string // Structure actuelle de la DB
+  available: string // Structure actuelle de la DB
+  description: string
+  amenities: string[]
+  property_type: string
+  rooms: number
+  size?: number
+  rules: string[]
   landlord_id: string
   landlord?: User
 
-  // Infos basiques
-  title: string
-  description: string
-  photos: string[]
-
-  // Localisation & prix
-  address: string
-  neighborhood: string
-  rent_amount: number
-  charges_included: boolean
-
-  // Disponibilité
-  available_from: string // ISO date
-  minimum_duration_months: number
-
-  // Caractéristiques
-  property_type: string
-  total_rooms?: number
-  available_rooms?: number
-  apartment_size?: number // m²
-  furnished: boolean
-
-  // Tags
-  amenities: string[]
-  rules: string[]
-
-  // Colocataires actuels
-  current_roommate_count: number
-  current_roommate_ages: number[]
-  roommate_lifestyle: Lifestyle
-
-  // Status
-  is_active: boolean
-
   // Timestamps
   created_at: string
   updated_at: string
 
-  // Compatibilité avec l'ancien système (à supprimer plus tard)
-  location?: string
-  price?: number
-  available?: string
-  rooms?: number
-  size?: number
+  // Champs pour future mise à jour (version avancée)
+  address?: string
+  neighborhood?: string
+  rent_amount?: number
+  charges_included?: boolean
+  available_from?: string // ISO date
+  minimum_duration_months?: number
+  total_rooms?: number
+  available_rooms?: number
+  apartment_size?: number // m²
+  furnished?: boolean
+  current_roommate_count?: number
+  current_roommate_ages?: number[]
+  roommate_lifestyle?: Lifestyle
+  is_active?: boolean
 }
 
-// Interface like (mise à jour)
+// Interface like (adaptée à la structure DB actuelle)
 export interface Like {
   id: string
-  liker_id: string // celui qui like
-  listing_id: string // l'annonce
+  user_id: string // Structure actuelle de la DB
+  listing_id: string
   created_at: string
 
   // Relations
-  liker?: User
+  user?: User
   listing?: Listing
 
-  // Compatibilité avec l'ancien système
-  user_id?: string
+  // Compatibilité avec version avancée
+  liker_id?: string
+  liker?: User
 }
 
 // Interface match (enrichie)
