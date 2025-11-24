@@ -3,7 +3,7 @@ import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 
 export const metadata: Metadata = {
-  title: 'Sublet - Student Housing Made Easy',
+  title: 'Subly - Student Housing Made Easy',
   description: 'Find your perfect student housing match with our swipe-based platform',
 }
 

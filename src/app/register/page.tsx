@@ -80,7 +80,7 @@ export default function Register() {
           <div className="text-center mb-6">
             <User className="w-12 h-12 text-primary mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-gray-800">
-              Bienvenue sur Sublet !
+              Bienvenue sur <span>Sub<span className="text-orange-500">ly</span></span> !
             </h2>
             <p className="text-gray-600">
               Créé ton compte pour trouver ta colocation idéale

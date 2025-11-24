@@ -6,7 +6,7 @@ export default function Home() {
       <div className="text-center max-w-md mx-auto">
         <div className="mb-8">
           <h1 className="text-5xl font-display font-bold text-dark-gray mb-4">
-            Sub<span className="text-primary">let</span>
+            Sub<span className="text-orange-500">ly</span>
           </h1>
           <p className="text-lg text-gray-600">
             Trouve ton logement étudiant en swipant !

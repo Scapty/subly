@@ -46,11 +46,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setLoading(true)
         try {
           const userData = await SupabaseService.getCurrentUser()
           setUser(userData)
         } catch (error) {
           console.error('Error fetching user data:', error)
+          // Si erreur de récupération des données utilisateur, déconnecter
+          await supabase.auth.signOut()
           setUser(null)
         } finally {
           setLoading(false)

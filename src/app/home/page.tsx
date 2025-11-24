@@ -240,7 +240,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <h1 className="text-xl font-display font-bold text-dark-gray">
-                🏠 Sublet
+                🏠 <span>Sub<span className="text-orange-500">ly</span></span>
               </h1>
 
               {/* View mode toggle */}

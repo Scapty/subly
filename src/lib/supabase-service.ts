@@ -18,12 +18,45 @@ export class SupabaseService {
   static async signUp(email: string, password: string, userData: Partial<User>) {
     const normalizedEmail = email.trim().toLowerCase()
 
+    // Configuration pour désactiver la vérification d'email
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
+      options: {
+        emailRedirectTo: undefined, // Pas de redirection email
+      }
     })
 
-    if (authError) throw authError
+    if (authError) {
+      console.error('Auth signup error:', authError)
+      // Gérer spécifiquement l'erreur de confirmation d'email
+      if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
+        // Si l'utilisateur existe déjà mais n'est pas confirmé, on essaie de le connecter directement
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        })
+
+        if (signInError) {
+          throw new Error('Un compte existe déjà avec cet email. Veuillez vous connecter.')
+        }
+
+        // Récupérer les données utilisateur existantes
+        if (signInData.user) {
+          const { data: existingUser, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', signInData.user.id)
+            .single()
+
+          if (userError) {
+            throw new Error('Email ou mot de passe incorrect')
+          }
+          return existingUser
+        }
+      }
+      throw authError
+    }
 
     if (authData.user) {
       // Créer le profil utilisateur avec la structure actuelle (name au lieu de first_name/last_name)
@@ -45,7 +78,7 @@ export class SupabaseService {
       return newUserData
     }
 
-    throw new Error('No user created')
+    throw new Error('Erreur lors de la création du compte')
   }
 
   static async signIn(email: string, password: string) {
@@ -58,7 +91,22 @@ export class SupabaseService {
 
     if (authError) {
       console.error('Auth error:', authError)
-      throw new Error('Email ou mot de passe incorrect')
+
+      // Gérer spécifiquement les erreurs de confirmation d'email
+      if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
+        throw new Error('Votre compte n\'est pas encore activé. Contactez le support si le problème persiste.')
+      }
+
+      // Gérer les erreurs d'identifiants incorrects
+      if (authError.message.includes('Invalid login credentials') ||
+          authError.message.includes('Email ou mot de passe incorrect') ||
+          authError.message.includes('invalid_credentials')) {
+        throw new Error('Email ou mot de passe incorrect')
+      }
+
+      // Erreur générique pour autres cas
+      console.error('Unexpected auth error:', authError)
+      throw new Error('Erreur de connexion. Veuillez réessayer.')
     }
 
     if (authData.user) {
