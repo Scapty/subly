@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { SupabaseService } from '@/lib/supabase-service'
 import {
   Camera, User, Heart, Home, Users, Calendar,
   ChevronLeft, ChevronRight, Upload, X
@@ -39,6 +40,7 @@ export default function SetupProfile() {
   const { user } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>([])
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -60,21 +62,31 @@ export default function SetupProfile() {
   const lifestyle = watch('lifestyle')
 
   const onSubmit = async (data: SetupForm) => {
+    if (!user) {
+      setError('Utilisateur non connecté')
+      return
+    }
+
     setLoading(true)
+    setError(null)
+
     try {
-      // Ici on appellera le service pour mettre à jour le profil
-      console.log('Profile setup data:', {
+      const profileData = {
         ...data,
         hobbies: selectedHobbies,
-        avatar_url: profileImage
-      })
+        avatar_url: profileImage || undefined, // ✅ Convertir null en undefined pour TypeScript
+        profile_completed: true, // ✅ Marquer le profil comme complété
+        interests: selectedHobbies // Pour compatibilité avec la structure existante
+      }
 
-      // TODO: Appeler SupabaseService.updateUserProfile(data)
+      // Appeler le service pour mettre à jour le profil
+      await SupabaseService.updateUserProfile(user.id, profileData)
 
-      // Rediriger vers l'accueil après setup complet
+      // ✅ Rediriger vers la Home après setup complet
       router.push('/home')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Profile setup error:', error)
+      setError('Erreur lors de la finalisation du profil. Veuillez réessayer.')
     } finally {
       setLoading(false)
     }
@@ -147,6 +159,13 @@ export default function SetupProfile() {
             />
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Étape 1: Infos de base */}
@@ -541,7 +560,7 @@ export default function SetupProfile() {
                 disabled={loading}
                 className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-lg py-4"
               >
-                {loading ? 'Finalisation...' : 'Finaliser mon profil'}
+                {loading ? 'Finalisation...' : '✅ Finaliser mon compte'}
               </button>
             </div>
           )}
